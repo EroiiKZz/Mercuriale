@@ -68,7 +68,7 @@ public final class Bargains {
 		return text != null && title.matcher(text).find();
 	}
 
-	private static List<String> lore(ItemStack stack) {
+	static List<String> lore(ItemStack stack) {
 		ItemLore lore = stack.get(DataComponents.LORE);
 		if (lore == null) {
 			return List.of();

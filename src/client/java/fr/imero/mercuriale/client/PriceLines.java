@@ -6,6 +6,7 @@ import fr.imero.mercuriale.price.MarketPrice;
 import fr.imero.mercuriale.price.PriceFormat;
 import fr.imero.mercuriale.price.PriceTable;
 import fr.imero.mercuriale.price.ShopPrice;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
@@ -24,15 +25,24 @@ public final class PriceLines {
 	}
 
 	public static List<Line> describe(ItemStack stack, int muted, int bright) {
+		MercurialeConfig config = MercurialeConfig.get();
 		PriceTable.Quote quote = PriceLookup.shown(stack);
-		if (quote == null) {
-			return List.of();
+		List<Line> lines = new ArrayList<>();
+		if (quote != null) {
+			prices(stack, quote, config.amount, muted, bright, lines);
 		}
-		PriceAmount amount = MercurialeConfig.get().amount;
+		// Les enchants custom se chiffrent à l'HDV, même quand l'objet renommé n'a pas de prix à lui
+		if (config.market && PriceService.active(Minecraft.getInstance(), config)) {
+			EnchantLines.append(stack, quote, lines, muted);
+		}
+		return lines;
+	}
+
+	private static void prices(ItemStack stack, PriceTable.Quote quote, PriceAmount amount, int muted, int bright,
+			List<Line> lines) {
 		int count = stack.getCount();
 		double factor = amount.scalesToStack(count) ? count : 1.0;
 
-		List<Line> lines = new ArrayList<>();
 		Line bargain = Bargains.line(stack, quote, muted);
 		if (bargain != null) {
 			lines.add(bargain);
@@ -48,7 +58,6 @@ public final class PriceLines {
 			lines.add(new Line(Component.translatable("mercuriale.price.stack", count),
 				Component.literal(PriceFormat.money(reference.getAsDouble() * count))));
 		}
-		return lines;
 	}
 
 	private static Component label(String key, PriceAmount amount, int count) {

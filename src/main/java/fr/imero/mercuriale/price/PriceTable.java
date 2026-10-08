@@ -25,6 +25,8 @@ public final class PriceTable {
 	private final Set<String> ambiguous = new HashSet<>();
 	private final Map<String, MarketPrice> vanilla = new HashMap<>();
 	private final Map<String, ShopPrice> shops = new HashMap<>();
+	// Par nom seul, pour les objets dont on ignore le matériau (la rune protectrice)
+	private final Map<String, MarketPrice> anyMaterial = new HashMap<>();
 
 	public record Quote(MarketPrice market, ShopPrice shop) {
 		public boolean isEmpty() {
@@ -61,6 +63,7 @@ public final class PriceTable {
 				if (loose.putIfAbsent(key, price) != null) {
 					ambiguous.add(key);
 				}
+				anyMaterial.putIfAbsent(looseName, price);
 			}
 			if (price.vanilla()) {
 				vanilla.putIfAbsent(material, price);
@@ -122,6 +125,10 @@ public final class PriceTable {
 			}
 		}
 		return new Quote(market, null);
+	}
+
+	public MarketPrice anyMaterial(String name) {
+		return name == null ? null : anyMaterial.get(PriceKeys.loose(name));
 	}
 
 	private static JsonArray array(JsonObject object, String name) {
