@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id": "mercuriale",
+	"version": "${version}",
+	"name": "Mercuriale",
+	"description": "Les prix VikingCraft en jeu, d'après VkAnalyzer : HDV et boutiques dans l'infobulle, valeur des coffres et de ton stock dans Chest Radar, et la fiche de l'objet survolé sur Alt.",
+	"authors": ["EroiiKZz"],
+	"license": "MIT",
+	"icon": "assets/mercuriale/icon.png",
+	"environment": "client",
+	"accessWidener": "mercuriale.accesswidener",
+	"entrypoints": {
+		"client": ["fr.imero.mercuriale.client.MercurialeClient"],
+		"modmenu": ["fr.imero.mercuriale.client.ModMenuIntegration"],
+		"vitrine": ["fr.imero.mercuriale.client.integration.VitrineHook"],
+		"chestradar": ["fr.imero.mercuriale.client.integration.ChestRadarHook"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "${minecraft_dependency}",
+		"java": "${java_dependency}",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*",
+		"vitrine": ">=5.0",
+		"chestradar": ">=3.11"
+	},
+	"custom": {
+		"modmenu": {
+			"parent": {
+				"id": "aeternum",
+				"name": "Aeternum",
+				"description": "Les mods client d'EroiiKZz pour le profil Aeternum : HUD, interfaces et confort de jeu. Déplie ce groupe pour configurer chaque mod.",
+				"icon": "assets/aeternum/icon.png"
+			}
+		}
+	}
+}

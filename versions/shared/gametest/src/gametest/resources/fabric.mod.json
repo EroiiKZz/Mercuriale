@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"id": "mercuriale-gametest",
+	"version": "1.0",
+	"name": "Mercuriale game tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": ["fr.imero.mercuriale.gametest.MercurialeGameTest"]
+	},
+	"depends": {
+		"mercuriale": "*"
+	}
+}
