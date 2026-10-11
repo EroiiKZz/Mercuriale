@@ -38,6 +38,8 @@ public class ConfigScreen extends SettingsScreen {
 			.requires(ENABLED, on);
 		choice(x, w, "mercuriale.config.amount", () -> config.amount.translationKey(),
 			() -> config.amount = config.amount.next()).requires(ENABLED, on);
+		toggle(x, w, "mercuriale.config.enchant_value", config.enchantValue, value -> config.enchantValue = value)
+			.requires("mercuriale.config.market", () -> config.enabled && config.market);
 		action(x, w, "mercuriale.config.reset_prices", () -> reset(config::resetPrices));
 
 		section("mercuriale.config.section.bargains");

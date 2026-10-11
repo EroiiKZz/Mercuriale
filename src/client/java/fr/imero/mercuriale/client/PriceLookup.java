@@ -1,6 +1,7 @@
 package fr.imero.mercuriale.client;
 
 import fr.imero.mercuriale.config.MercurialeConfig;
+import fr.imero.mercuriale.price.CustomEnchants;
 import fr.imero.mercuriale.price.PriceTable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -10,6 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 
 import java.util.List;
@@ -59,6 +61,15 @@ public final class PriceLookup {
 		}
 		PriceTable.Quote quote = found.only(config.market, config.shops);
 		return quote.isEmpty() ? null : quote;
+	}
+
+	public static CustomEnchants customEnchants(ItemStack stack) {
+		MercurialeConfig config = MercurialeConfig.get();
+		if (stack == null || stack.isEmpty() || !config.market || !PriceService.active(Minecraft.getInstance(), config)) {
+			return CustomEnchants.NONE;
+		}
+		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+		return CustomEnchants.read(data == null ? "" : data.copyTag().toString(), Bargains.lore(stack));
 	}
 
 	private static boolean definedByItsData(ItemStack stack) {

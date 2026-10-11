@@ -1,0 +1,2 @@
+• ajoute un réglage pour afficher ou non la valeur des enchantements dans l'infobulle
+• ajoute une touche à maintenir pour voir cette valeur même quand le réglage est coupé (à choisir dans les commandes)

@@ -1,7 +1,7 @@
 package fr.imero.mercuriale.price;
 
 public record MarketPrice(String material, String name, boolean vanilla, String slug, double price, Tier tier,
-		int samples, Integer windowDays, int onSale, Double cheapest) {
+		int samples, Integer windowDays, int onSale, Double cheapest, boolean ambiguous) {
 	public enum Tier {
 		SOLD,
 		ASKED,

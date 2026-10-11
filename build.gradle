@@ -65,6 +65,14 @@ base {
 	archivesName = 'mercuriale'
 }
 
+tasks.register('runProductionClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+	def fabricApi = configurations.detachedConfiguration(dependencies.create("net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"))
+	fabricApi.transitive = false
+	mods.setFrom(fileTree(dir: 'run/production/prod-mods', include: '*.jar'), fabricApi)
+	runDir = file('run/production')
+	programArgs.addAll('--width', '1920', '--height', '1080', '--fullscreen')
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(25)

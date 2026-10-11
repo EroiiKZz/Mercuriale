@@ -2,20 +2,29 @@ package fr.imero.mercuriale.client;
 
 import fr.imero.mercuriale.config.MercurialeConfig;
 import fr.imero.mercuriale.config.PriceAmount;
+import fr.imero.mercuriale.price.CustomEnchants;
 import fr.imero.mercuriale.price.MarketPrice;
 import fr.imero.mercuriale.price.PriceFormat;
 import fr.imero.mercuriale.price.PriceTable;
 import fr.imero.mercuriale.price.ShopPrice;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.OptionalDouble;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 public final class PriceLines {
 	private static final String SEPARATOR = " · ";
+	private static final Set<Screen> WATCHED = Collections.newSetFromMap(new WeakHashMap<>());
+
+	private static boolean enchantKeyHeld;
 
 	public record Line(Component label, Component value) {
 	}
@@ -23,11 +32,81 @@ public final class PriceLines {
 	private PriceLines() {
 	}
 
+	public static void register() {
+		ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+			enchantKeyHeld = false;
+			if (WATCHED.add(screen)) {
+				MercurialeKeybinds.watch(screen, MercurialeKeybinds.SHOW_ENCHANTS,
+					pressed -> enchantKeyHeld |= pressed, released -> enchantKeyHeld &= !released);
+			}
+		});
+	}
+
 	public static List<Line> describe(ItemStack stack, int muted, int bright) {
 		PriceTable.Quote quote = PriceLookup.shown(stack);
-		if (quote == null) {
-			return List.of();
+		List<Line> lines = quote == null ? new ArrayList<>() : quoted(stack, quote, muted, bright);
+		CustomEnchants found = MercurialeConfig.get().enchantValue || enchantKeyHeld
+			? PriceLookup.customEnchants(stack) : CustomEnchants.NONE;
+		if (!found.isEmpty()) {
+			enchanted(lines, found, quote, muted);
 		}
+		return lines;
+	}
+
+	private static void enchanted(List<Line> lines, CustomEnchants found, PriceTable.Quote quote, int muted) {
+		PriceTable table = PriceService.table();
+		double total = quote == null ? 0.0 : quote.reference().orElse(0.0);
+		int parts = total > 0 ? 1 : 0;
+		int unpriced = 0;
+		if (found.enchants() > 0) {
+			double books = 0.0;
+			int missing = found.enchants() - found.books().size();
+			for (String book : found.books()) {
+				MarketPrice price = table.quote(CustomEnchants.BOOK_MATERIAL, book).market();
+				if (price == null || price.ambiguous()) {
+					missing++;
+				} else {
+					books += price.price();
+				}
+			}
+			lines.add(new Line(Component.translatable("mercuriale.price.enchants", found.enchants()), addOn(books, missing, muted)));
+			total += books;
+			unpriced += missing;
+			parts++;
+		}
+		if (found.augmenters() > 0) {
+			MarketPrice unit = table.quote(CustomEnchants.AUGMENTER_MATERIAL, CustomEnchants.AUGMENTER_NAME).market();
+			double cost = unit == null ? 0.0 : unit.price() * found.augmenters();
+			int missing = unit == null ? found.augmenters() : 0;
+			lines.add(new Line(Component.translatable("mercuriale.price.augmenters", found.augmenters()), addOn(cost, missing, muted)));
+			total += cost;
+			unpriced += missing;
+			parts++;
+		}
+		if (found.rune()) {
+			MarketPrice rune = table.quote(CustomEnchants.RUNE_MATERIAL, CustomEnchants.RUNE_NAME).market();
+			double cost = rune == null ? 0.0 : rune.price();
+			lines.add(new Line(Component.translatable("mercuriale.price.rune"), addOn(cost, rune == null ? 1 : 0, muted)));
+			total += cost;
+			unpriced += rune == null ? 1 : 0;
+			parts++;
+		}
+		if (parts > 1) {
+			lines.add(new Line(Component.translatable("mercuriale.price.total"),
+				Component.literal((unpriced > 0 ? "≥ " : "") + PriceFormat.money(total))));
+		}
+	}
+
+	private static Component addOn(double value, int missing, int muted) {
+		Component unpriced = Component.translatable("mercuriale.price.unpriced", missing).withStyle(style -> style.withColor(muted));
+		if (missing > 0 && value <= 0) {
+			return unpriced;
+		}
+		MutableComponent text = Component.literal(PriceFormat.money(value));
+		return missing > 0 ? text.append(Component.literal(SEPARATOR).append(unpriced).withStyle(style -> style.withColor(muted))) : text;
+	}
+
+	private static List<Line> quoted(ItemStack stack, PriceTable.Quote quote, int muted, int bright) {
 		PriceAmount amount = MercurialeConfig.get().amount;
 		int count = stack.getCount();
 		double factor = amount.scalesToStack(count) ? count : 1.0;

@@ -20,17 +20,21 @@ public final class MercurialeKeybinds {
 	private MercurialeKeybinds() {
 	}
 
+	public static KeyMapping SHOW_ENCHANTS;
+
 	public static void register() {
+		SHOW_ENCHANTS = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+			"key." + Mercuriale.MOD_ID + ".show_enchants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY));
 		OPEN_PAGE = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 			"key." + Mercuriale.MOD_ID + ".open_page", InputConstants.Type.KEYSYM, InputConstants.KEY_LALT, CATEGORY));
 	}
 
-	public static void watchOpenPage(Screen screen, Consumer<Boolean> pressed, Consumer<Boolean> released) {
-		ScreenKeyboardEvents.afterKeyPress(screen).register((ignored, input) -> pressed.accept(opensPage(input)));
-		ScreenKeyboardEvents.afterKeyRelease(screen).register((ignored, input) -> released.accept(opensPage(input)));
+	public static void watch(Screen screen, KeyMapping key, Consumer<Boolean> pressed, Consumer<Boolean> released) {
+		ScreenKeyboardEvents.afterKeyPress(screen).register((ignored, input) -> pressed.accept(matches(key, input)));
+		ScreenKeyboardEvents.afterKeyRelease(screen).register((ignored, input) -> released.accept(matches(key, input)));
 	}
 
-	private static boolean opensPage(KeyEvent input) {
-		return OPEN_PAGE != null && OPEN_PAGE.matches(input);
+	private static boolean matches(KeyMapping key, KeyEvent input) {
+		return key != null && key.matches(input);
 	}
 }

@@ -17,19 +17,23 @@ public final class MercurialeKeybinds {
 	private MercurialeKeybinds() {
 	}
 
+	public static KeyMapping SHOW_ENCHANTS;
+
 	public static void register() {
+		SHOW_ENCHANTS = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+			"key." + Mercuriale.MOD_ID + ".show_enchants", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CATEGORY));
 		OPEN_PAGE = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 			"key." + Mercuriale.MOD_ID + ".open_page", InputConstants.Type.KEYSYM, InputConstants.KEY_LALT, CATEGORY));
 	}
 
-	public static void watchOpenPage(Screen screen, Consumer<Boolean> pressed, Consumer<Boolean> released) {
+	public static void watch(Screen screen, KeyMapping mapping, Consumer<Boolean> pressed, Consumer<Boolean> released) {
 		ScreenKeyboardEvents.afterKeyPress(screen).register((ignored, key, scancode, modifiers) ->
-			pressed.accept(opensPage(key, scancode)));
+			pressed.accept(matches(mapping, key, scancode)));
 		ScreenKeyboardEvents.afterKeyRelease(screen).register((ignored, key, scancode, modifiers) ->
-			released.accept(opensPage(key, scancode)));
+			released.accept(matches(mapping, key, scancode)));
 	}
 
-	private static boolean opensPage(int key, int scancode) {
-		return OPEN_PAGE != null && OPEN_PAGE.matches(key, scancode);
+	private static boolean matches(KeyMapping mapping, int key, int scancode) {
+		return mapping != null && mapping.matches(key, scancode);
 	}
 }

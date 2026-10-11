@@ -86,7 +86,8 @@ public final class PriceTable {
 				(int) number(item, "samples", 0.0),
 				optionalInt(item, "windowDays"),
 				(int) number(item, "onSale", 0.0),
-				optionalDouble(item, "cheapest")));
+				optionalDouble(item, "cheapest"),
+				item.has("ambiguous") && item.get("ambiguous").getAsBoolean()));
 		}
 		List<ShopPrice> shopList = new ArrayList<>();
 		for (JsonElement element : array(root, "shops")) {

@@ -35,6 +35,7 @@ public final class MercurialeConfig {
 	public boolean enabled = true;
 	public boolean market = true;
 	public boolean shops = true;
+	public boolean enchantValue = true;
 	public PriceAmount amount = PriceAmount.UNIT;
 	public boolean radarValues = true;
 	public int shopUndercutPercent = 1;
@@ -111,6 +112,7 @@ public final class MercurialeConfig {
 		enabled = fresh.enabled;
 		market = fresh.market;
 		shops = fresh.shops;
+		enchantValue = fresh.enchantValue;
 		amount = fresh.amount;
 		url = fresh.url;
 		server = fresh.server;

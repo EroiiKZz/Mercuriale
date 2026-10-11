@@ -13,11 +13,14 @@ public final class MercurialeClient implements ClientModInitializer {
 		MercurialeConfig.get();
 		MercurialeKeybinds.register();
 		TooltipHost.register();
+		PriceLines.register();
 		PageLink.register();
 		ContainerValue.register();
+		Updater.register();
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			Theme.sync();
 			PriceService.tick(client, MercurialeConfig.get());
+			Updater.tick(client);
 		});
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> PriceService.forceRefresh());
 		Mercuriale.LOGGER.info("[{}] client init", Mercuriale.MOD_ID);

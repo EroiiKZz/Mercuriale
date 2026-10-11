@@ -140,7 +140,7 @@ public final class PriceFixture implements AutoCloseable {
 	public void watchKeys() {
 		pressed.clear();
 		released.clear();
-		MercurialeKeybinds.watchOpenPage(GameBridge.screen(), pressed::add, released::add);
+		MercurialeKeybinds.watch(GameBridge.screen(), MercurialeKeybinds.OPEN_PAGE, pressed::add, released::add);
 	}
 
 	public void checkPrices() {

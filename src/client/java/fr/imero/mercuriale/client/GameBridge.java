@@ -25,6 +25,10 @@ public final class GameBridge {
 		return Minecraft.getInstance().gui.screen();
 	}
 
+	public static void setScreen(Screen screen) {
+		Minecraft.getInstance().gui.setScreen(screen);
+	}
+
 	public static void openUri(URI uri) {
 		Util.getPlatform().openUri(uri);
 	}

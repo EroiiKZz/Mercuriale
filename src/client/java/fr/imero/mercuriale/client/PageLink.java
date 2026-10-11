@@ -28,7 +28,7 @@ public final class PageLink {
 			if (!EQUIPPED.add(screen)) {
 				return;
 			}
-			MercurialeKeybinds.watchOpenPage(screen, PageLink::pressed, openPage -> released(client, openPage));
+			MercurialeKeybinds.watch(screen, MercurialeKeybinds.OPEN_PAGE, PageLink::pressed, openPage -> released(client, openPage));
 		});
 	}
 

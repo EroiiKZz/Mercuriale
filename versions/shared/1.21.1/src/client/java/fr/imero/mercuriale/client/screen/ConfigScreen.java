@@ -134,6 +134,8 @@ public class ConfigScreen extends Screen {
 		toggle("mercuriale.config.shops", () -> config.shops, value -> config.shops = value, on);
 		choice("mercuriale.config.amount", () -> Component.translatable(config.amount.translationKey()),
 			() -> config.amount = config.amount.next(), on);
+		toggle("mercuriale.config.enchant_value", () -> config.enchantValue, value -> config.enchantValue = value,
+			() -> config.enabled && config.market);
 		action("mercuriale.config.reset_prices", () -> reset(config::resetPrices));
 
 		section("mercuriale.config.section.bargains");

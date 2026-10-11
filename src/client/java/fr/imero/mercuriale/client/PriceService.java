@@ -31,11 +31,11 @@ public final class PriceService {
 	private static final int NOT_MODIFIED = 304;
 	private static final String CACHE_FILE = Mercuriale.MOD_ID + "/prices.json";
 	private static final String PLAYER_HEADER = "X-Mercuriale-Player";
-	private static final String USER_AGENT = "Mercuriale/" + FabricLoader.getInstance().getModContainer(Mercuriale.MOD_ID)
+	static final String USER_AGENT = "Mercuriale/" + FabricLoader.getInstance().getModContainer(Mercuriale.MOD_ID)
 		.map(container -> container.getMetadata().getVersion().getFriendlyString())
 		.orElse("dev") + " (Minecraft; " + System.getProperty("os.name", "?") + ")";
 
-	private static final HttpClient HTTP = HttpClient.newBuilder()
+	static final HttpClient HTTP = HttpClient.newBuilder()
 		.version(HttpClient.Version.HTTP_1_1)
 		.connectTimeout(CONNECT_TIMEOUT)
 		.followRedirects(HttpClient.Redirect.NORMAL)
