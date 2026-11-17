@@ -1,0 +1,22 @@
+pluginManagement {
+	repositories {
+		maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'mercuriale-26.3'
+rootProject.projectDir = file('../..')
+
+def target = settingsDir
+def port = new File(target, '../../../aeternum/port-26.3.gradle')
+def overrides = new Properties()
+new File(target, 'gradle.properties').withInputStream { overrides.load(it) }
+gradle.beforeProject { p ->
+	overrides.each { k, v -> p.ext.set(k, v) }
+	if (overrides.version) p.version = overrides.version
+	p.ext.portDir = target
+	p.layout.buildDirectory = new File(target, 'build')
+	if (port.isFile()) p.apply from: port
+}

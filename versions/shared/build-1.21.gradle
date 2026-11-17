@@ -1,0 +1,230 @@
+def modRoot = file("$projectDir/../..")
+def sharedDir = file("$projectDir/../shared")
+def targetVersion = project.minecraft_version
+
+def versionKey = { String name -> name.tokenize('.').collect { it as int } }
+def notAfter = { List a, List b ->
+	for (int i = 0; i < Math.max(a.size(), b.size()); i++) {
+		int x = i < a.size() ? a[i] : 0
+		int y = i < b.size() ? b[i] : 0
+		if (x != y) {
+			return x < y
+		}
+	}
+	return true
+}
+
+def overlays = sharedDir.listFiles()
+	.findAll { it.isDirectory() && it.name ==~ /\d+(\.\d+)+/ && notAfter(versionKey(it.name), versionKey(targetVersion)) }
+	.sort { a, b -> notAfter(versionKey(a.name), versionKey(b.name)) ? -1 : 1 }
+
+def hostHooks = ['fr/imero/mercuriale/client/integration/**']
+
+def identifierEra = notAfter(versionKey('1.21.11'), versionKey(targetVersion))
+def portSource = { String line ->
+	identifierEra ? line.replaceAll(/\bResourceLocation\b/, 'Identifier')
+		.replace('import net.minecraft.Util;', 'import net.minecraft.util.Util;')
+		.replace('protected void renderWidget(GuiGraphics', 'protected void renderContents(GuiGraphics') : line
+}
+
+def mergeClientSources = tasks.register('mergeClientSources', Sync) {
+	def layers = ([file("${modRoot}/src/client/java")] + overlays.collect { file("${it}/src/client/java") })
+		.findAll { it.isDirectory() }
+	def taken = new HashSet<String>()
+	layers.reverse().each { layer ->
+		def shadowed = new HashSet<String>(taken)
+		from(layer) {
+			hostHooks.each { exclude it }
+			exclude { element -> !element.directory && shadowed.contains(element.relativePath.pathString) }
+		}
+		layer.eachFileRecurse(groovy.io.FileType.FILES) { source ->
+			taken << layer.toPath().relativize(source.toPath()).toString().replace('\\', '/')
+		}
+		inputs.dir(layer)
+	}
+	inputs.property 'identifierEra', identifierEra
+	filter { line -> portSource(line) }
+	into layout.buildDirectory.dir('generated/sources/mercuriale-client')
+}
+
+def accessWidener = layout.buildDirectory.file('generated/mercuriale.accesswidener').get().asFile
+def namedWidener = file("${modRoot}/src/main/resources/mercuriale.accesswidener").getText('UTF-8')
+	.replaceFirst(/(?m)^(accessWidener\s+v2\s+)official/, '$1named')
+accessWidener.parentFile.mkdirs()
+if (!accessWidener.isFile() || accessWidener.getText('UTF-8') != namedWidener) {
+	accessWidener.setText(namedWidener, 'UTF-8')
+}
+
+repositories {
+	mavenCentral()
+	maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/releases' }
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	accessWidenerPath = accessWidener
+}
+
+sourceSets {
+	main {
+		java.srcDirs = [file("${modRoot}/src/main/java")]
+		resources.srcDirs = [file("${modRoot}/src/main/resources")]
+	}
+	client {
+		java.srcDirs = []
+		java.srcDir mergeClientSources
+		resources.srcDirs = []
+	}
+}
+
+loom {
+	mods {
+		"mercuriale" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+def clientGameTests = notAfter(versionKey('1.21.6'), versionKey(targetVersion))
+
+if (clientGameTests) {
+	fabricApi {
+		configureTests {
+			createSourceSet = true
+			modId = 'mercuriale-gametest'
+			enableGameTests = false
+			enableClientGameTests = true
+			eula = true
+		}
+	}
+
+	loom {
+		runs {
+			clientGameTest {
+				vmArg '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
+			}
+		}
+	}
+
+	sourceSets {
+		gametest {
+			java.srcDirs = [file("${sharedDir}/gametest/src/gametest/java"), file("${sharedDir}/gametest/src/common/java")]
+			resources.srcDirs = [file("${sharedDir}/gametest/src/gametest/resources")]
+		}
+	}
+} else {
+	def selftestPort = 25599
+	def selftestPlayer = 'MercurialeTest'
+
+	sourceSets {
+		selftest {
+			java.srcDirs = [file("${sharedDir}/gametest/src/selftest/java"), file("${sharedDir}/gametest/src/common/java")]
+			resources.srcDirs = [file("${sharedDir}/gametest/src/selftest/resources")]
+			compileClasspath += sourceSets.client.compileClasspath + sourceSets.client.output + sourceSets.main.output
+			runtimeClasspath += sourceSets.client.runtimeClasspath + sourceSets.client.output + sourceSets.main.output
+		}
+	}
+
+	loom {
+		mods {
+			"mercuriale-selftest" {
+				sourceSet sourceSets.selftest
+			}
+		}
+		runs {
+			selftestServer {
+				server()
+				name = 'Mercuriale selftest server'
+				runDir = 'run/selftest-server'
+				programArgs '--nogui'
+			}
+			selftestClient {
+				client()
+				name = 'Mercuriale selftest client'
+				runDir = 'run/selftest-client'
+				source sourceSets.selftest
+				vmArg '-Dmercuriale.selftest=true'
+				programArgs '--username', selftestPlayer
+			}
+		}
+	}
+
+	tasks.matching { it.name == 'runSelftestServer' }.configureEach {
+		doFirst {
+			def dir = file('run/selftest-server')
+			dir.mkdirs()
+			new File(dir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+			new File(dir, 'server.properties').setText([
+				'online-mode=false', "server-port=${selftestPort}", 'enforce-secure-chat=false',
+				'level-type=minecraft\\:flat', 'generate-structures=false', 'view-distance=4',
+				'spawn-protection=0', 'motd=Mercuriale selftest'].join('\n') + '\n', 'UTF-8')
+			def uuid = UUID.nameUUIDFromBytes("OfflinePlayer:${selftestPlayer}".getBytes('UTF-8'))
+			new File(dir, 'ops.json').setText(groovy.json.JsonOutput.toJson([[uuid: uuid.toString(),
+				name: selftestPlayer, level: 4, bypassesPlayerLimit: false]]), 'UTF-8')
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+	def version = project.version
+	def minecraftDependency = project.minecraft_dependency
+	def javaDependency = project.java_dependency
+	inputs.property "version", version
+	inputs.property "minecraft_dependency", minecraftDependency
+	inputs.property "java_dependency", javaDependency
+	inputs.property "access_widener", namedWidener
+	filesMatching("fabric.mod.json") {
+		expand "version": version,
+			"minecraft_dependency": minecraftDependency,
+			"java_dependency": javaDependency
+	}
+	doLast {
+		new File(destinationDir, 'mercuriale.accesswidener').setText(namedWidener, 'UTF-8')
+		def manifest = new File(destinationDir, 'fabric.mod.json')
+		def json = new groovy.json.JsonSlurper().parse(manifest)
+		json.entrypoints.remove('vitrine')
+		json.entrypoints.remove('chestradar')
+		json.suggests.remove('vitrine')
+		json.suggests.remove('chestradar')
+		json.description = "Les prix VikingCraft en jeu, d'après VkAnalyzer : HDV et boutiques dans l'infobulle, valeur des coffres ouverts, et la fiche de l'objet survolé sur Alt."
+		manifest.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json)), 'UTF-8')
+	}
+}
+
+base {
+	archivesName = 'mercuriale'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+ext.aeternumRoot = "${modRoot}/../aeternum"
+ext.aeternumPackage = 'mercuriale'
+ext.aeternumMainClass = 'Mercuriale'
+ext.aeternumClientVariant = '1.21-mojang'
+apply from: "${modRoot}/../aeternum/aeternum.gradle"
+
+tasks.named('aeternumGenerateClient') {
+	inputs.property 'identifierEra', identifierEra
+	filter { line -> portSource(line) }
+}
