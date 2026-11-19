@@ -45,6 +45,7 @@ public final class PriceLines {
 
 	public static List<Line> describe(ItemStack stack, int muted, int bright) {
 		PriceTable.Quote quote = PriceLookup.shown(stack);
+		ViewLog.note(stack, quote != null);
 		List<Line> lines = quote == null ? new ArrayList<>() : quoted(stack, quote, muted, bright);
 		CustomEnchants found = showsEnchants() ? PriceLookup.customEnchants(stack) : CustomEnchants.NONE;
 		if (!found.isEmpty()) {

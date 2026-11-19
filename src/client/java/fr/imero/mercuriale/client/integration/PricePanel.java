@@ -3,6 +3,7 @@ package fr.imero.mercuriale.client.integration;
 import fr.imero.mercuriale.client.Bargains;
 import fr.imero.mercuriale.client.PriceLines;
 import fr.imero.mercuriale.client.PriceLookup;
+import fr.imero.mercuriale.client.ViewLog;
 import fr.imero.mercuriale.config.MercurialeConfig;
 import fr.imero.mercuriale.config.PriceAmount;
 import fr.imero.mercuriale.price.CustomEnchants;
@@ -66,6 +67,7 @@ final class PricePanel implements TooltipBlock {
 
 	static PricePanel of(ItemStack stack) {
 		PriceTable.Quote quote = PriceLookup.shown(stack);
+		ViewLog.note(stack, quote != null);
 		CustomEnchants found = PriceLines.showsEnchants() ? PriceLookup.customEnchants(stack) : CustomEnchants.NONE;
 		List<PanelMath.Part> parts = PriceLines.valuation(found, quote);
 		PriceAmount amount = MercurialeConfig.get().amount;

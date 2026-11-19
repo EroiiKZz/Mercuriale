@@ -30,7 +30,7 @@ public final class PriceService {
 	private static final int OK = 200;
 	private static final int NOT_MODIFIED = 304;
 	private static final String CACHE_FILE = Mercuriale.MOD_ID + "/prices.json";
-	private static final String PLAYER_HEADER = "X-Mercuriale-Player";
+	static final String PLAYER_HEADER = "X-Mercuriale-Player";
 	static final String USER_AGENT = "Mercuriale/" + FabricLoader.getInstance().getModContainer(Mercuriale.MOD_ID)
 		.map(container -> container.getMetadata().getVersion().getFriendlyString())
 		.orElse("dev") + " (Minecraft; " + System.getProperty("os.name", "?") + ")";
@@ -76,7 +76,9 @@ public final class PriceService {
 		if (System.currentTimeMillis() < nextFetchAt || !FETCHING.compareAndSet(false, true)) {
 			return;
 		}
-		fetch(url, client.getUser().getName());
+		String player = client.getUser().getName();
+		ViewLog.flush(url, player);
+		fetch(url, player);
 	}
 
 	public static void forceRefresh() {

@@ -84,7 +84,7 @@ public final class PriceLookup {
 		return false;
 	}
 
-	private static String customName(ItemStack stack) {
+	static String customName(ItemStack stack) {
 		Component custom = stack.get(DataComponents.CUSTOM_NAME);
 		if (custom != null) {
 			return ChatFormatting.stripFormatting(custom.getString());
