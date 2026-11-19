@@ -1,1 +1,3 @@
-• meilleure détection des objets
+• rend les réglages plus simples à comprendre, en français comme en anglais
+• montre les prix dans un vrai panneau quand Vitrine est installé
+• détecte mieux les objets
